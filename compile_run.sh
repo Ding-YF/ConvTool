@@ -3,6 +3,23 @@
 # 设置 example 目录路径
 EXAMPLE_DIR="../example"
 
+# 解析命令行参数
+AUTO_RUN=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -y)
+            AUTO_RUN=true
+            shift
+            ;;
+        *)
+            echo "未知参数: $1"
+            echo "用法: $0 [-y]"
+            echo "  -y: 编译完成后自动运行"
+            exit 1
+            ;;
+    esac
+done
+
 # 获取当前目录下的所有 .cpp 文件
 CPP_FILES=($(find "$EXAMPLE_DIR" -maxdepth 1 -name "*.cpp" -printf "%f\n" | sort))
 
@@ -39,22 +56,33 @@ cmake --build . --target "$TARGET_NAME" install
 
 if [ $? -eq 0 ]; then
     echo "$TARGET_NAME 构建完成..."
-    echo -e "是否需要执行？按 [Enter] 执行，按 [Esc] 取消"
-
-    # 读取单个字符（不显示）判断回车或 ESC
-    read -s -n 1 key
-
-    if [[ $key == "" ]]; then
-        echo "执行 sudo ./bin/$TARGET_NAME"
+    
+    if [ "$AUTO_RUN" = true ]; then
+        echo "===================================="
+        echo "自动执行 sudo ./bin/$TARGET_NAME"
         sudo "./bin/$TARGET_NAME"
-    elif [[ $key == $'\e' ]]; then
-        echo "已取消执行"
-        exit 0
     else
-        echo "未知按键，已取消执行"
-        exit 1
+        echo -e "是否需要执行？按 [Enter] 执行，按 [Esc] 取消"
+
+        # 读取单个字符（不显示）判断回车或 ESC
+        read -s -n 1 key
+
+        if [[ $key == "" ]]; then
+            echo "===================================="
+            echo "执行 sudo ./bin/$TARGET_NAME"
+            sudo "./bin/$TARGET_NAME"
+        elif [[ $key == $'\e' ]]; then
+            echo "===================================="
+            echo "已取消执行"
+            exit 0
+        else
+            echo "===================================="
+            echo "未知按键，已取消执行"
+            exit 1
+        fi
     fi
 else
+    echo "===================================="
     echo "$TARGET_NAME 构建失败"
     exit 1
 fi
